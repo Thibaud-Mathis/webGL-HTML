@@ -37209,7 +37209,7 @@ class MapControls extends OrbitControls {
 }
 
 exports.MapControls = MapControls;
-},{"three":"node_modules/three/build/three.module.js"}],"script.js":[function(require,module,exports) {
+},{"three":"node_modules/three/build/three.module.js"}],"js/script.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -37285,7 +37285,7 @@ var Sketch = /*#__PURE__*/function () {
       this.geometry = new THREE.BoxBufferGeometry(0.5, 0.5, 0.5);
       this.material = new THREE.MeshNormalMaterial({});
       this.material = new THREE.ShaderMaterial({
-        fragmentShader: "\n                void main() {\n                    gl_FragColor = vec4(1.,0.,0.0,1.);\n                }\n            ",
+        fragmentShader: "\n                void main() {\n                    gl_FragColor = vec4(1.,0.,1.0,1.);\n                }\n            ",
         vertexShader: "\n                void main() {\n                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);\n                }\n            "
       });
       this.mesh = new THREE.Mesh(this.geometry, this.material);
@@ -37524,5 +37524,5 @@ function hmrAcceptRun(bundle, id) {
     return true;
   }
 }
-},{}]},{},["../../../AppData/Roaming/npm/node_modules/parcel-bundler/src/builtins/hmr-runtime.js","script.js"], null)
-//# sourceMappingURL=/script.75da7f30.js.map
+},{}]},{},["../../../AppData/Roaming/npm/node_modules/parcel-bundler/src/builtins/hmr-runtime.js","js/script.js"], null)
+//# sourceMappingURL=/script.d573be0b.js.map

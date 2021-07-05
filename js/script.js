@@ -15,19 +15,21 @@ export default class Sketch {
         this.width = this.container.offsetWidth
         this.height = this.container.offsetHeight
         // create a camera
-        this.camera = new THREE.PerspectiveCamera(70, this.width / this.height, 0.01, 10)
+        this.camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.001, 100)
         this.camera.position.z = 1
 
         this.renderer = new THREE.WebGLRenderer( { antialias: true } );
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         this.renderer.setSize( this.width, this.height );
         this.container.appendChild( this.renderer.domElement );
         // Add orbital controls
         this.controls = new OrbitControls(this.camera, this.renderer.domElement)
         // Call Obj self methods
-        this.resize()
-        this.setupResize()
         this.addObjects()
+        this.resize()
         this.render()
+        this.setupResize()
+
 
     }
 
@@ -36,11 +38,13 @@ export default class Sketch {
     }
 
     resize() {
-        console.log('resizing')
         this.width = this.container.offsetWidth
+        console.log(this.container.offsetWidth)
         this.height = this.container.offsetHeight
         this.renderer.setSize(this.width, this.height)
+        console.log("width: ", this.width, "height: ", this.height)
         this.camera.aspect = this.width / this.height
+        console.log("camera aspect: ",  this.camera.aspect)
         this.camera.updateProjectionMatrix()
     }
 
@@ -50,7 +54,7 @@ export default class Sketch {
         this.material = new THREE.ShaderMaterial({
             fragmentShader: `
                 void main() {
-                    gl_FragColor = vec4(1.,0.,0.0,1.);
+                    gl_FragColor = vec4(1.,0.,1.0,1.);
                 }
             `,
             vertexShader: `
