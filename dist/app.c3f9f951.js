@@ -37719,6 +37719,128 @@ exports.MapControls = MapControls;
 module.exports = "#define GLSLIFY 1\nvarying float v_noise;\nvarying vec2 v_uv;\n\nvoid main() {\n    vec3 color1 = vec3(0. ,1., 0.2);\n    vec3 color2 = vec3(0. ,1., 1.);\n    vec3 finalColor = mix(color1, color2, 0.5 * (v_noise + 1.));\n\n    // gl_FragColor = vec4();\n    gl_FragColor = vec4(finalColor, 1.);\n    // gl_FragColor = vec4(v_uv, 0., 1.);\n\n}";
 },{}],"js/shaders/vertex.glsl":[function(require,module,exports) {
 module.exports = "#define GLSLIFY 1\n//\tClassic Perlin 3D Noise \n//\tby Stefan Gustavson\n//\nvec4 permute(vec4 x){return mod(((x*34.0)+1.0)*x, 289.0);}\nvec4 taylorInvSqrt(vec4 r){return 1.79284291400159 - 0.85373472095314 * r;}\nvec3 fade(vec3 t) {return t*t*t*(t*(t*6.0-15.0)+10.0);}\n\nfloat cnoise(vec3 P){\n  vec3 Pi0 = floor(P); // Integer part for indexing\n  vec3 Pi1 = Pi0 + vec3(1.0); // Integer part + 1\n  Pi0 = mod(Pi0, 289.0);\n  Pi1 = mod(Pi1, 289.0);\n  vec3 Pf0 = fract(P); // Fractional part for interpolation\n  vec3 Pf1 = Pf0 - vec3(1.0); // Fractional part - 1.0\n  vec4 ix = vec4(Pi0.x, Pi1.x, Pi0.x, Pi1.x);\n  vec4 iy = vec4(Pi0.yy, Pi1.yy);\n  vec4 iz0 = Pi0.zzzz;\n  vec4 iz1 = Pi1.zzzz;\n\n  vec4 ixy = permute(permute(ix) + iy);\n  vec4 ixy0 = permute(ixy + iz0);\n  vec4 ixy1 = permute(ixy + iz1);\n\n  vec4 gx0 = ixy0 / 7.0;\n  vec4 gy0 = fract(floor(gx0) / 7.0) - 0.5;\n  gx0 = fract(gx0);\n  vec4 gz0 = vec4(0.5) - abs(gx0) - abs(gy0);\n  vec4 sz0 = step(gz0, vec4(0.0));\n  gx0 -= sz0 * (step(0.0, gx0) - 0.5);\n  gy0 -= sz0 * (step(0.0, gy0) - 0.5);\n\n  vec4 gx1 = ixy1 / 7.0;\n  vec4 gy1 = fract(floor(gx1) / 7.0) - 0.5;\n  gx1 = fract(gx1);\n  vec4 gz1 = vec4(0.5) - abs(gx1) - abs(gy1);\n  vec4 sz1 = step(gz1, vec4(0.0));\n  gx1 -= sz1 * (step(0.0, gx1) - 0.5);\n  gy1 -= sz1 * (step(0.0, gy1) - 0.5);\n\n  vec3 g000 = vec3(gx0.x,gy0.x,gz0.x);\n  vec3 g100 = vec3(gx0.y,gy0.y,gz0.y);\n  vec3 g010 = vec3(gx0.z,gy0.z,gz0.z);\n  vec3 g110 = vec3(gx0.w,gy0.w,gz0.w);\n  vec3 g001 = vec3(gx1.x,gy1.x,gz1.x);\n  vec3 g101 = vec3(gx1.y,gy1.y,gz1.y);\n  vec3 g011 = vec3(gx1.z,gy1.z,gz1.z);\n  vec3 g111 = vec3(gx1.w,gy1.w,gz1.w);\n\n  vec4 norm0 = taylorInvSqrt(vec4(dot(g000, g000), dot(g010, g010), dot(g100, g100), dot(g110, g110)));\n  g000 *= norm0.x;\n  g010 *= norm0.y;\n  g100 *= norm0.z;\n  g110 *= norm0.w;\n  vec4 norm1 = taylorInvSqrt(vec4(dot(g001, g001), dot(g011, g011), dot(g101, g101), dot(g111, g111)));\n  g001 *= norm1.x;\n  g011 *= norm1.y;\n  g101 *= norm1.z;\n  g111 *= norm1.w;\n\n  float n000 = dot(g000, Pf0);\n  float n100 = dot(g100, vec3(Pf1.x, Pf0.yz));\n  float n010 = dot(g010, vec3(Pf0.x, Pf1.y, Pf0.z));\n  float n110 = dot(g110, vec3(Pf1.xy, Pf0.z));\n  float n001 = dot(g001, vec3(Pf0.xy, Pf1.z));\n  float n101 = dot(g101, vec3(Pf1.x, Pf0.y, Pf1.z));\n  float n011 = dot(g011, vec3(Pf0.x, Pf1.yz));\n  float n111 = dot(g111, Pf1);\n\n  vec3 fade_xyz = fade(Pf0);\n  vec4 n_z = mix(vec4(n000, n100, n010, n110), vec4(n001, n101, n011, n111), fade_xyz.z);\n  vec2 n_yz = mix(n_z.xy, n_z.zw, fade_xyz.y);\n  float n_xyz = mix(n_yz.x, n_yz.y, fade_xyz.x); \n  return 2.2 * n_xyz;\n}\n\n// uniforms\nuniform float time;\n\n// varyings\nvarying float v_noise;\nvarying vec2 v_uv;\n\nvoid main() {\n    vec3 newPosition = position;\n    float PI = 3.1415925;\n\n    float noise = cnoise(vec3(position.x * 4.,position.y * 4. + time * 0.2, 0.));\n    // newPosition.z += 0.2*sin((newPosition.x + 0.25 + time*0.1) * 1.5 * PI); \n    // newPosition.y += 0.05*sin((newPosition.z + 0.25 + time*0.1) * 0.5 * PI); \n    // newPosition.x += 0.1*sin((newPosition.y + 0.25 + time*0.1) * 1.2 * PI); \n    // newPosition.z += 0.2 * noise;\n\n    v_noise = noise;\n    v_uv = uv;\n\n    gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);\n\n}";
+},{}],"js/scroll.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+var lerp = function lerp(a, b, n) {
+  return (1 - n) * a + n * b;
+};
+
+var Scroll = /*#__PURE__*/function () {
+  function Scroll() {
+    var _this = this;
+
+    _classCallCheck(this, Scroll);
+
+    this.DOM = {
+      main: document.querySelector("main")
+    }; // the scrollable element
+    // we translate this element when scrolling (y-axis)
+
+    this.DOM.scrollable = this.DOM.main.querySelector("div[data-scroll]");
+    this.docScroll = 0;
+    this.scrollToRender = 0;
+    this.current = 0;
+    this.ease = 0.1;
+    this.speed = 0;
+    this.speedTarget = 0; // set the body's height
+
+    this.setSize(); // set the initial values
+
+    this.getScroll();
+    this.init(); // the <main> element's style needs to be modified
+
+    this.style(); // init/bind events
+
+    this.initEvents(); // start the render loop
+
+    requestAnimationFrame(function () {
+      return _this.render();
+    });
+  }
+
+  _createClass(Scroll, [{
+    key: "init",
+    value: function init() {
+      // sets the initial value (no interpolation) - translate the scroll value
+      for (var key in this.renderedStyles) {
+        this.current = this.scrollToRender = this.getScroll();
+      } // translate the scrollable element
+
+
+      this.setPosition();
+      this.shouldRender = true;
+    }
+  }, {
+    key: "style",
+    value: function style() {
+      this.DOM.main.style.position = "fixed";
+      this.DOM.main.style.width = this.DOM.main.style.height = "100%";
+      this.DOM.main.style.top = this.DOM.main.style.left = 0;
+      this.DOM.main.style.overflow = "hidden";
+    }
+  }, {
+    key: "getScroll",
+    value: function getScroll() {
+      this.docScroll = window.pageYOffset || document.documentElement.scrollTop;
+      return this.docScroll;
+    }
+  }, {
+    key: "initEvents",
+    value: function initEvents() {
+      var _this2 = this;
+
+      window.onbeforeunload = function () {
+        window.scrollTo(0, 0);
+      }; // on resize reset the body's height
+
+
+      window.addEventListener("resize", function () {
+        return _this2.setSize();
+      });
+      window.addEventListener("scroll", this.getScroll.bind(this));
+    }
+  }, {
+    key: "setSize",
+    value: function setSize() {
+      // set the heigh of the body in order to keep the scrollbar on the page
+      document.body.style.height = "".concat(this.DOM.scrollable.scrollHeight, "px");
+    }
+  }, {
+    key: "setPosition",
+    value: function setPosition() {
+      // translates the scrollable element
+      if (Math.round(this.scrollToRender) !== Math.round(this.current) || this.scrollToRender < 10) {
+        this.DOM.scrollable.style.transform = "translate3d(0,".concat(-1 * this.scrollToRender, "px,0)");
+      }
+    }
+  }, {
+    key: "render",
+    value: function render() {
+      this.speed = Math.min(Math.abs(this.current - this.scrollToRender), 200) / 200;
+      this.speedTarget += (this.speed - this.speedTarget) * 0.2;
+      this.current = this.getScroll();
+      this.scrollToRender = lerp(this.scrollToRender, this.current, this.ease); // and translate the scrollable element
+
+      this.setPosition();
+    }
+  }]);
+
+  return Scroll;
+}();
+
+exports.default = Scroll;
 },{}],"js/app.js":[function(require,module,exports) {
 "use strict";
 
@@ -37738,6 +37860,8 @@ var _OrbitControls = require("three/examples/jsm/controls/OrbitControls");
 var _fragment = _interopRequireDefault(require("./shaders/fragment.glsl"));
 
 var _vertex = _interopRequireDefault(require("./shaders/vertex.glsl"));
+
+var _scroll = _interopRequireDefault(require("./scroll"));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -37762,9 +37886,6 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
 
 function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
-
-console.log(_imagesloaded.default);
-console.log(_fontfaceobserver.default);
 
 var Sketch = /*#__PURE__*/function () {
   function Sketch(options) {
@@ -37794,7 +37915,8 @@ var Sketch = /*#__PURE__*/function () {
     this.container.appendChild(this.renderer.domElement); // Add orbital controls
 
     this.controls = new _OrbitControls.OrbitControls(this.camera, this.renderer.domElement);
-    this.images = _toConsumableArray(document.querySelectorAll('img'));
+    this.images = _toConsumableArray(document.querySelectorAll('img')); // Promises
+
     var fontOpen = new Promise(function (resolve) {
       new _fontfaceobserver.default("Open Sans").load().then(function () {
         resolve();
@@ -37812,19 +37934,24 @@ var Sketch = /*#__PURE__*/function () {
     });
     var allDone = [fontOpen, fontPlayfair, preloadImages];
     console.log(allDone);
+    this.currentScroll = 0;
     Promise.all(allDone).then(function () {
-      // Call Obj self methods
+      _this.scroll = new _scroll.default(); // Call Obj self methods
+
       _this.addImages();
 
-      _this.setPosition();
+      _this.setPosition(); // this.addObjects()
 
-      _this.addObjects();
 
       _this.resize();
 
+      _this.setupResize();
+
       _this.render();
 
-      _this.setupResize();
+      window.addEventListener('scroll', function () {// this.currentScroll = window.scrollY
+        // this.setPosition()
+      });
     });
   }
 
@@ -37880,7 +38007,7 @@ var Sketch = /*#__PURE__*/function () {
       var _this3 = this;
 
       this.imagesStore.forEach(function (image) {
-        image.mesh.position.y = -image.top + _this3.height / 2 - image.height / 2;
+        image.mesh.position.y = _this3.currentScroll - image.top + _this3.height / 2 - image.height / 2;
         image.mesh.position.x = image.left - _this3.width / 2 + image.width / 2;
       });
     }
@@ -37907,10 +38034,11 @@ var Sketch = /*#__PURE__*/function () {
     key: "render",
     value: function render() {
       this.time += 0.05;
-      window.requestAnimationFrame(this.render.bind(this));
-      this.mesh.rotation.x = this.time / 2000;
-      this.mesh.rotation.y = this.time / 1000;
-      this.material.uniforms.time.value = this.time;
+      this.scroll.render();
+      this.currentScroll = this.scroll.scrollToRender;
+      this.setPosition();
+      window.requestAnimationFrame(this.render.bind(this)); // this.material.uniforms.time.value = this.time;
+
       this.renderer.render(this.scene, this.camera);
     }
   }]);
@@ -37933,7 +38061,7 @@ new Sketch({
 // }
 // function animation( time ) {
 // }
-},{"three":"node_modules/three/build/three.module.js","imagesloaded":"node_modules/imagesloaded/imagesloaded.js","fontfaceobserver":"node_modules/fontfaceobserver/fontfaceobserver.standalone.js","three/examples/jsm/controls/OrbitControls":"node_modules/three/examples/jsm/controls/OrbitControls.js","./shaders/fragment.glsl":"js/shaders/fragment.glsl","./shaders/vertex.glsl":"js/shaders/vertex.glsl"}],"../../../AppData/Roaming/npm/node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
+},{"three":"node_modules/three/build/three.module.js","imagesloaded":"node_modules/imagesloaded/imagesloaded.js","fontfaceobserver":"node_modules/fontfaceobserver/fontfaceobserver.standalone.js","three/examples/jsm/controls/OrbitControls":"node_modules/three/examples/jsm/controls/OrbitControls.js","./shaders/fragment.glsl":"js/shaders/fragment.glsl","./shaders/vertex.glsl":"js/shaders/vertex.glsl","./scroll":"js/scroll.js"}],"../../../AppData/Roaming/npm/node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
 var OVERLAY_ID = '__parcel__error__overlay__';
 var OldModule = module.bundle.Module;
@@ -37961,7 +38089,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "1080" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "1088" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

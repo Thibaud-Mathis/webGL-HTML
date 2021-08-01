@@ -5,9 +5,7 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls"
 import { Scene } from 'three';
 import fragment from './shaders/fragment.glsl'
 import vertex from './shaders/vertex.glsl'
-
-console.log(imagesLoaded)
-console.log(FontFaceObserver)
+import Scroll from './scroll'
 
 
 export default class Sketch {
@@ -39,34 +37,39 @@ export default class Sketch {
 
         this.images = [...document.querySelectorAll('img')]
 
+        // Promises
         const fontOpen = new Promise(resolve => {
             new FontFaceObserver("Open Sans").load().then(() => {
                 resolve();
             })
         })
-
         const fontPlayfair = new Promise(resolve => {
             new FontFaceObserver("Playfair Display").load().then(() => {
                 resolve();
             })
         })
-
         const preloadImages = new Promise((resolve, reject) => {
             imagesLoaded(document.querySelectorAll("img"), { background: true }, resolve)
         })
 
         let allDone = [fontOpen, fontPlayfair, preloadImages] 
         console.log(allDone)
+        this.currentScroll = 0
         
-
         Promise.all(allDone).then(() => {
+            this.scroll = new Scroll()
             // Call Obj self methods
             this.addImages()
             this.setPosition()
-            this.addObjects()
+            // this.addObjects()
             this.resize()
-            this.render()
             this.setupResize()
+            this.render()
+            window.addEventListener('scroll', () => {
+                // this.currentScroll = window.scrollY
+                // this.setPosition()
+            })
+
         })
 
         
@@ -118,7 +121,7 @@ export default class Sketch {
 
     setPosition() {
         this.imagesStore.forEach(image => {
-            image.mesh.position.y = -image.top + this.height/2 - image.height/2
+            image.mesh.position.y = this.currentScroll - image.top + this.height/2 - image.height/2
             image.mesh.position.x = image.left - this.width/2 + image.width/2
         })
     }
@@ -141,11 +144,12 @@ export default class Sketch {
 
     render () {
         this.time += 0.05
+        this.scroll.render()
+        this.currentScroll = this.scroll.scrollToRender
+        this.setPosition()
         window.requestAnimationFrame(this.render.bind(this))
-        this.mesh.rotation.x = this.time / 2000;
-        this.mesh.rotation.y = this.time / 1000;
 
-        this.material.uniforms.time.value = this.time;
+        // this.material.uniforms.time.value = this.time;
         this.renderer.render( this.scene, this.camera )
     }
 }
